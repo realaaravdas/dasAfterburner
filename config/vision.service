@@ -1,0 +1,18 @@
+[Unit]
+Description=FRC 2026 Vision System for Orange Pi 5
+After=network.target
+
+[Service]
+Type=simple
+User=root
+# Adjust the path to your compiled binary
+WorkingDirectory=/media/kilodas/disk2/kiloCode/dasAfterburner
+ExecStart=/media/kilodas/disk2/kiloCode/dasAfterburner/build/dasAfterburner
+Restart=always
+RestartSec=5
+
+# Set display environment for OpenCV debug windows (if needed)
+# Environment=DISPLAY=:0
+
+[Install]
+WantedBy=multi-user.target
