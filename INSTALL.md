@@ -109,8 +109,11 @@ sudo ldconfig
 ```
 
 ### ntcore / WPILib (manual)
-1. Go to: https://github.com/wpilibsuite/allwpilib/releases/latest
-2. Download the following ARM64 zips (replace `VERSION` with the release tag, e.g. `2026.1.1`):
+1. Find the latest version number at:
+   `https://frcmaven.wpi.edu/release/edu/wpi/first/ntcore/ntcore-cpp/maven-metadata.xml`
+   (look for `<latest>`)
+2. Download the following ARM64 zips (replace `VERSION` with that version, e.g. `2026.1.1`):
+   Base URL: `https://frcmaven.wpi.edu/release/edu/wpi/first/{component}/{component}-cpp/{VERSION}/{component}-cpp-{VERSION}-linuxarm64.zip`
    - `wpiutil-cpp-VERSION-linuxarm64.zip`
    - `wpinet-cpp-VERSION-linuxarm64.zip`
    - `ntcore-cpp-VERSION-linuxarm64.zip`

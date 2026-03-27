@@ -54,35 +54,47 @@ else
 fi
 
 # ── 3. NetworkTables / ntcore (WPILib ARM64) ─────────────────────────────────
+# Artifacts are on WPILib's Maven repo (frcmaven.wpi.edu), NOT GitHub releases.
+# URL pattern:
+#   https://frcmaven.wpi.edu/release/edu/wpi/first/<comp>/<comp>-cpp/<ver>/<comp>-cpp-<ver>-linuxarm64.zip
 echo ""
 echo "[3/3] Installing ntcore (WPILib NetworkTables) for ARM64..."
 
-WPILIB_VERSION=$(curl -sf "https://api.github.com/repos/wpilibsuite/allwpilib/releases/latest" \
-    | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/') || true
+MAVEN_BASE="https://frcmaven.wpi.edu/release/edu/wpi/first"
+
+# Fetch latest ntcore version from Maven metadata
+WPILIB_VERSION=$(curl -sf \
+    "${MAVEN_BASE}/ntcore/ntcore-cpp/maven-metadata.xml" \
+    | grep -oP '(?<=<latest>)[^<]+' | head -1) || true
 
 if [ -z "$WPILIB_VERSION" ]; then
-    echo "  WARNING: Could not fetch WPILib version from GitHub."
+    # Fallback: try to parse from allwpilib GitHub tag
+    WPILIB_VERSION=$(curl -sf \
+        "https://api.github.com/repos/wpilibsuite/allwpilib/releases/latest" \
+        | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/') || true
+fi
+
+if [ -z "$WPILIB_VERSION" ]; then
+    echo "  WARNING: Could not determine WPILib version."
     echo "  Install ntcore manually — see INSTALL.md for instructions."
 else
     echo "  WPILib version: $WPILIB_VERSION"
-    BASE_URL="https://github.com/wpilibsuite/allwpilib/releases/download/v${WPILIB_VERSION}"
     TMPDIR_WPI=$(mktemp -d)
 
     install_wpi_artifact() {
         local NAME="$1"
-        local URL="${BASE_URL}/${NAME}-cpp-${WPILIB_VERSION}-linuxarm64.zip"
-        echo "  Downloading $NAME..."
-        if curl -sfL "$URL" -o "$TMPDIR_WPI/$NAME.zip"; then
+        local URL="${MAVEN_BASE}/${NAME}/${NAME}-cpp/${WPILIB_VERSION}/${NAME}-cpp-${WPILIB_VERSION}-linuxarm64.zip"
+        echo "  Downloading $NAME from frcmaven..."
+        if curl -fL --progress-bar "$URL" -o "$TMPDIR_WPI/$NAME.zip"; then
             unzip -qo "$TMPDIR_WPI/$NAME.zip" -d "$TMPDIR_WPI/$NAME"
-            # Headers
             if [ -d "$TMPDIR_WPI/$NAME/headers" ]; then
                 cp -r "$TMPDIR_WPI/$NAME/headers/." /usr/local/include/
             fi
-            # Shared libs
             find "$TMPDIR_WPI/$NAME" -name "*.so*" -exec cp {} /usr/local/lib/ \;
             echo "    $NAME installed."
         else
-            echo "    WARNING: Could not download $NAME. URL: $URL"
+            echo "    WARNING: Could not download $NAME"
+            echo "    URL tried: $URL"
         fi
     }
 
