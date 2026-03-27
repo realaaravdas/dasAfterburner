@@ -29,17 +29,26 @@ struct VisionConfig {
 /**
  * GPIO output pin mapping for the Orange Pi 5 40-pin header.
  *
- * Verify pin names on your board:
- *   gpioinfo gpiochip1
+ * Orange Pi 5 pin  GPIO name   gpiochip / line   Signal
+ * ───────────────  ──────────  ────────────────  ──────────────────
+ * Pin 11           GPIO1_B4    gpiochip1 / 12    BALL_PRESENT
+ * Pin 13           GPIO1_B6    gpiochip1 / 14    COUNT_BIT0 (LSB)
+ * Pin 15           GPIO1_B7    gpiochip1 / 15    COUNT_BIT1
+ * Pin 16           GPIO1_C0    gpiochip1 / 16    COUNT_BIT2 (MSB)
+ * Pin  6           GND         —                 Ground (shared)
  *
- * Physical → GPIO name   → chip/line used here
- * Pin 11   → GPIO1_B4    → gpiochip1 line 12   BALL_PRESENT
- * Pin 13   → GPIO1_B6    → gpiochip1 line 14   COUNT_BIT0 (LSB)
- * Pin 15   → GPIO1_B7    → gpiochip1 line 15   COUNT_BIT1
- * Pin 16   → GPIO1_C0    → gpiochip1 line 16   COUNT_BIT2 (MSB)
+ * Verify line names before wiring:  gpioinfo gpiochip1
  *
- * 3-bit count encodes 0–7 balls. BALL_PRESENT mirrors (count > 0).
- * Use any GND pin (6, 9, 14, 20, 25) as common ground with the RoboRIO.
+ * RoboRIO DIO connector pinout (each port, left-to-right):
+ *   [ GND ][ 5V ][ S ]
+ *
+ * Wiring (repeat for each of the 4 signals, one DIO port each):
+ *   Orange Pi GPIO pin  ──►  RoboRIO DIO  S   pin
+ *   Orange Pi GND pin   ──►  RoboRIO DIO  GND pin
+ *                            RoboRIO DIO  5V  pin  ← leave unconnected
+ *
+ * 3-bit count encodes 0–7 balls. BALL_PRESENT is HIGH whenever count > 0.
+ * 3.3 V logic from the Orange Pi is within the RoboRIO DIO Vih spec (≥ 2.0 V).
  */
 struct GpioConfig {
     const char* chipName      = "gpiochip1";
