@@ -1,15 +1,17 @@
 #!/bin/bash
-# build.sh
-
+# build.sh — Build dasAfterburner from project root
 set -e
 
-mkdir -p build
-cd build
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Assuming ntcore and rknn_api are installed or their paths are provided
-# cmake -Dntcore_DIR=/path/to/ntcore/lib/cmake ..
-cmake ..
+mkdir -p "$PROJECT_ROOT/build"
+cd "$PROJECT_ROOT/build"
+
+# Pass any extra cmake args through (e.g. -DENABLE_NTCORE=OFF)
+cmake "$PROJECT_ROOT" "$@"
 
 make -j$(nproc)
 
-echo "Build complete. Binary is in build/dasAfterburner"
+echo ""
+echo "Build complete. Binary: $PROJECT_ROOT/build/dasAfterburner"
