@@ -43,6 +43,14 @@ if(ENABLE_NTCORE)
         find_library(WPINET_LIB wpinet
             PATHS /usr/local/lib /usr/lib)
 
+        # WPIStruct.h ships inside wpistruct/ or wpiutil/ depending on WPILib version
+        find_path(WPISTRUCT_INCLUDE_DIR wpistruct/WPIStruct.h
+            PATHS /usr/local/include /usr/include)
+        if(NOT WPISTRUCT_INCLUDE_DIR)
+            message(WARNING "wpistruct/WPIStruct.h not found — HAVE_NTCORE disabled")
+            set(ENABLE_NTCORE OFF)
+        endif()
+
         if(NTCORE_INCLUDE_DIR AND NTCORE_LIB)
             message(STATUS "ntcore found manually: ${NTCORE_LIB}")
             set(ntcore_FOUND TRUE)

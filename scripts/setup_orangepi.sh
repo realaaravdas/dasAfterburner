@@ -101,7 +101,29 @@ else
     install_wpi_artifact "wpiutil"
     install_wpi_artifact "wpinet"
     install_wpi_artifact "ntcore"
-    install_wpi_artifact "wpistruct"
+
+    # wpistruct: separate artifact in some WPILib versions; bundled in wpiutil in others.
+    # Try to download it, but don't fail if it's absent — wpiutil already covers it.
+    WPISTRUCT_URL="${MAVEN_BASE}/wpistruct/wpistruct-cpp/${WPILIB_VERSION}/wpistruct-cpp-${WPILIB_VERSION}-linuxarm64.zip"
+    echo "  Downloading wpistruct from frcmaven (optional)..."
+    if curl -fL --progress-bar "$WPISTRUCT_URL" -o "$TMPDIR_WPI/wpistruct.zip" 2>/dev/null; then
+        unzip -qo "$TMPDIR_WPI/wpistruct.zip" -d "$TMPDIR_WPI/wpistruct"
+        if [ -d "$TMPDIR_WPI/wpistruct/headers" ]; then
+            cp -r "$TMPDIR_WPI/wpistruct/headers/." /usr/local/include/
+        fi
+        find "$TMPDIR_WPI/wpistruct" -name "*.so*" -exec cp {} /usr/local/lib/ \;
+        echo "    wpistruct installed."
+    else
+        echo "    wpistruct not available as a separate artifact (bundled in wpiutil — OK)."
+    fi
+
+    # Verify the header we actually need is present
+    if [ -f /usr/local/include/wpistruct/WPIStruct.h ]; then
+        echo "  wpistruct/WPIStruct.h found — OK"
+    else
+        echo "  WARNING: wpistruct/WPIStruct.h not found after install."
+        echo "  HAVE_NTCORE will be disabled at build time."
+    fi
 
     ldconfig
     rm -rf "$TMPDIR_WPI"
