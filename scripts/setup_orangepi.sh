@@ -25,6 +25,7 @@ apt-get install -y --allow-change-held-packages \
     curl \
     unzip \
     libopencv-dev \
+    libgpiod-dev \
     v4l-utils
 
 # ── 2. RKNN NPU SDK ─────────────────────────────────────────────────────────

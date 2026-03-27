@@ -3,86 +3,71 @@
 #include <string>
 #include <vector>
 #include <opencv2/opencv.hpp>
-
-#ifdef HAVE_NTCORE
-#include <networktables/NetworkTableInstance.h>
-#include <networktables/BooleanTopic.h>
-#include <networktables/IntegerTopic.h>
-#include <networktables/StructTopic.h>
-#include <wpistruct/WPIStruct.h>
-#endif
+#include <gpiod.h>
 
 #ifdef HAVE_RKNN
 #include <rknn_api.h>
 #endif
 
-/**
- * @brief Bounding box for a detected object (pixel coordinates).
- */
 struct BBox {
     int x, y, width, height;
 };
 
-/**
- * @brief A single detection result from the NPU model.
- *
- * When HAVE_NTCORE is defined the struct is annotated for WPIStruct
- * serialisation so it can be published as a typed array on NetworkTables.
- */
 struct Detection {
     int id;
     std::string label;
     float confidence;
     BBox bbox;
-
-#ifdef HAVE_NTCORE
-    WPISTRUCT_DECLARE_FIELDS
-#endif
 };
 
-#ifdef HAVE_NTCORE
-WPISTRUCT_DEFINE_FIELDS(Detection,
-    id, label, confidence,
-    bbox.x, bbox.y, bbox.width, bbox.height)
-#endif
-
-/**
- * @brief Runtime configuration for the vision pipeline.
- */
 struct VisionConfig {
-    int cameraIndex    = 0;
+    int cameraIndex       = 0;
     std::string modelPath = "models/yellow_ball.rknn";
-    int nThreads       = 1;
-    bool debugDisplay  = true;
-    int teamNumber     = 2026;
+    int nThreads          = 1;
 };
 
 /**
- * @brief Top-level class that owns the camera, NPU context, and NT publishers.
+ * GPIO output pin mapping for the Orange Pi 5 40-pin header.
  *
- * Lifecycle: construct → Initialize() → Run() (blocks until camera error or ESC).
+ * Verify pin names on your board:
+ *   gpioinfo gpiochip1
+ *
+ * Physical → GPIO name   → chip/line used here
+ * Pin 11   → GPIO1_B4    → gpiochip1 line 12   BALL_PRESENT
+ * Pin 13   → GPIO1_B6    → gpiochip1 line 14   COUNT_BIT0 (LSB)
+ * Pin 15   → GPIO1_B7    → gpiochip1 line 15   COUNT_BIT1
+ * Pin 16   → GPIO1_C0    → gpiochip1 line 16   COUNT_BIT2 (MSB)
+ *
+ * 3-bit count encodes 0–7 balls. BALL_PRESENT mirrors (count > 0).
+ * Use any GND pin (6, 9, 14, 20, 25) as common ground with the RoboRIO.
  */
+struct GpioConfig {
+    const char* chipName      = "gpiochip1";
+    unsigned ballPresentLine  = 12; // physical pin 11
+    unsigned countBit0Line    = 14; // physical pin 13
+    unsigned countBit1Line    = 15; // physical pin 15
+    unsigned countBit2Line    = 16; // physical pin 16
+};
+
 class HopperDetector {
 public:
     HopperDetector();
     ~HopperDetector();
 
-    bool Initialize(const VisionConfig& config);
+    bool Initialize(const VisionConfig& config, const GpioConfig& gpio = GpioConfig{});
     void Run();
 
 private:
     void ProcessFrame(cv::Mat& frame);
-    void UpdateNetworkTables();
+    void WriteGpio();
 
     VisionConfig config_;
 
-#ifdef HAVE_NTCORE
-    nt::NetworkTableInstance ntInst_;
-    std::shared_ptr<nt::NetworkTable> table_;
-    nt::BooleanPublisher              ballPresentPub_;
-    nt::IntegerPublisher              ballCountPub_;
-    nt::StructArrayPublisher<Detection> detectionsPub_;
-#endif
+    gpiod_chip* gpioChip_        = nullptr;
+    gpiod_line* ballPresentLine_ = nullptr;
+    gpiod_line* countBit0Line_   = nullptr;
+    gpiod_line* countBit1Line_   = nullptr;
+    gpiod_line* countBit2Line_   = nullptr;
 
 #ifdef HAVE_RKNN
     rknn_context rknnCtx_ = 0;
